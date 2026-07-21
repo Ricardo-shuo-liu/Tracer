@@ -1,0 +1,123 @@
+# ========== Python编译文件 ==========
+# 忽略Python自动生成的字节码文件和目录
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# ========== C扩展文件 ==========
+*.so
+
+# ========== 打包和分发文件 ==========
+# 忽略各种打包和分发相关文件
+.Python
+build/
+develop-eggs/
+.dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+# 注：*.egg和*.egg-info是Python早期包分发格式，现已被wheel替代
+MANIFEST
+
+# ========== PyInstaller相关文件 ==========
+*.manifest
+*.spec
+
+# ========== 安装日志 ==========
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ========== 单元测试和覆盖率报告 ==========
+# 忽略测试和覆盖率生成的文件
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# ========== 翻译文件 ==========
+*.mo
+*.pot
+
+# ========== 框架相关文件 ==========
+# Django
+*.log
+local_settings.py
+db.sqlite3
+# Flask
+instance/
+.webassets-cache
+# Scrapy
+.scrapy
+
+# ========== 文档构建文件 ==========
+docs/_build/
+target/
+
+# ========== Jupyter/IPython ==========
+.ipynb_checkpoints/
+profile_default/
+ipython_config.py
+
+# ========== 环境和版本控制 ==========
+.python-version
+celerybeat-schedule
+*.sage.py
+
+# ========== 虚拟环境 ==========
+# 忽略虚拟环境目录（非常重要，避免提交环境依赖）
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# ========== IDE和编辑器 ==========
+# VS Code配置
+.vscode/
+
+# ========== 前端相关 ==========
+# 忽略Node.js依赖目录
+node_modules/
+
+# 忽略前端构建输出目录
+dist/
+build/
+
+# 忽略npm日志文件
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# 忽略前端IDE配置文件
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ========== 系统文件 ==========
+# Windows和Mac系统生成的文件
+Thumbs.db
+.DS_Store
