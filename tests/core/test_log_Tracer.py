@@ -22,7 +22,7 @@ def fib(n):
         return fib(n-2) + fib(n-1)
     
 if __name__ == "__main__":
-    with Tracer(trace_fn=[add,chain,fun,fib]):
+    with Tracer(trace_fn=[add,chain,fun,fib],logging_path="/home/ricaedo/Tracer/test.log"):
         fun()
         print()
         fib(3)

@@ -1,14 +1,13 @@
 # Tracer
 
-- This project is inspired by the UC Berkeley course CS61A\.
+- 本项目灵感来自UC伯克利的课程CS61A 
 
-- Use the`tracer` decorator and the `Tracer` context manager to track function calls\.
+- 使用`tracer`装饰器和`Tracer`上下文管理器来追踪函数的调用情况
 
-### Using the `tracer` Decorator
+### 使用`tracer`装饰器
 
-You can refer to the file `tests\core\test_tracer.py`
-
-```python
+- 你可以查看`tests\core\test_tracer.py`内容
+```
 from tracer import tracer
 
 def add(x,y):
@@ -38,10 +37,8 @@ if __name__ == "__main__":
     print()
     fib(3)
 ```
-
-The execution output is shown below:
-
-```plain text
+执行结果如下:
+```
 -> fun()
 |  -> chain(n=3)
 |  |  -> chain(n=2)
@@ -69,11 +66,10 @@ The execution output is shown below:
 |  <- fib returned 2
 ```
 
-### Using the `Tracer` Context Manager
+### 使用`Tracer`上下文管理器
 
-You can refer to the file `tests\core\test_Tracer.py`
-
-```python
+- 你可以查看`tests\core\test_Tracer.py`内容
+```
 from tracer import Tracer
 
 
@@ -103,10 +99,8 @@ if __name__ == "__main__":
         print()
         fib(3)
 ```
-
-The execution output is shown below:
-
-```plain text
+执行结果如下：
+```
 -> fun()
 |  -> chain(n=3)
 |  |  -> chain(n=2)
@@ -134,15 +128,13 @@ The execution output is shown below:
 |  <- fib returned 2
 ```
 
-Note that the `Tracer` context manager does not provide the `trace_entity: bool` interface\.
+需要注意的是`Tracer`上下文管理器没有提供`trace_entity：bool`接口
 
-### Design Features of Tracer
+### Tracer的设计功能
 
-#### 1\. Logging Capability
+1. 日志功能
 
-- Built based on Python's built\-in `logging` module\.
-
-- Enabled via the `logging_path` parameter of both `tracer` decorator and `Tracer` context manager\.
-
-- The default value of `logging_path` is `None`\. If a valid file path is passed in, it will be regarded as the storage path for log files\.
+- 基于`logging`模块 
+- 通过`tracer`和`Tracer`的`logging_path`实现启用
+- `logging_path` 默认数值为 `None` 如果传入真实地址 那么认为该真实地址为log的存储位置
 

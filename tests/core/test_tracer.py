@@ -1,5 +1,4 @@
-from tracer import Tracer
-
+from tracer import tracer
 
 def add(x,y):
     return x + y
@@ -10,9 +9,12 @@ def chain(n):
         return add(1,1)
     return add(n, chain(n-1))
 
+@tracer(trace_fn=[add, chain],
+        trace_entity=True)
 def fun():
     return chain(3)
 
+@tracer(trace_entity=True)
 def fib(n):
     if n == 0:
         return 0
@@ -20,9 +22,7 @@ def fib(n):
         return 1
     else:
         return fib(n-2) + fib(n-1)
-    
 if __name__ == "__main__":
-    with Tracer(trace_fn=[add,chain,fun,fib]):
-        fun()
-        print()
-        fib(3)
+    fun()
+    print()
+    fib(3)
