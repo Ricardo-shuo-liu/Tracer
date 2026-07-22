@@ -7,15 +7,15 @@ name = "tracer"
 version = "0.1.0"
 requires-python = ">=3.10.9"
 authors = [{ name = "Ricardo-shuo-liu", email = "13838152117@139.com" }]
-description = ""
+description = "A lightweight intrusive Python function call tracer "
 readme = "README.md"
 license = { file = "LICENSE" }
 keywords = ["tracer", "debug", "cs61a", "stack-trace"]
 dependencies = []
 
 [project.urls]
-# Homepage = ""
-# "Bug Tracker" = ""
+Homepage = "https://github.com/Ricardo-shuo-liu/Tracer"
+"Bug Tracker" = "https://github.com/Ricardo-shuo-liu/Tracer/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]

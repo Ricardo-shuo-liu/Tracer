@@ -1,10 +1,12 @@
 # TraceContext.py
-
+from .TraceStats import TraceStats
 
 class TraceContext:
-    def __init__(self,logger):
+    def __init__(self,logger,time_trace:bool=False):
         self.prefix = ""
         self.logger = logger
+        self.time_trace = time_trace
+        self.stats = TraceStats() if time_trace else None
     def indent(self):
         self.prefix += "|  "
 

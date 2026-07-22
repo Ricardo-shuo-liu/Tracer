@@ -17,14 +17,23 @@ def frame_callback(
     output_line: str | None = None
 
     if event == "call":
+        if ctx.time_trace and ctx.stats:
+            ctx.stats.enter_func(frame, func_name)
         var_names = frame.f_code.co_varnames
         args_str = [f"{name}={repr(frame.f_locals[name])}" for name in var_names]
         arg_text = ", ".join(args_str)
-        output_line = f"{ctx.prefix}<- {func_name} returned {repr(arg)}"
+        output_line = f"{ctx.prefix}-> {func_name}({arg_text})"
         ctx.indent()
 
     elif event == "return":
-        print(f"{ctx.prefix}<- {func_name} returned {repr(arg)}")
+        cost = None
+        if ctx.time_trace and ctx.stats:
+            _,cost = ctx.stats.exit_func(frame)
+
+        if cost is not None:
+            output_line = f"{ctx.prefix}<- {func_name} returned {repr(arg)} | cost={cost:.6f}s"
+        else:
+            output_line = f"{ctx.prefix}<- {func_name} returned {repr(arg)}"
         ctx.dedent()
 
     if output_line is not None:
