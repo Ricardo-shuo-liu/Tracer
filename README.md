@@ -1,19 +1,18 @@
 # Tracer
 
-- This project is inspired by the UC Berkeley course CS61A\.
+\- This project is inspired by the CS61A course of UC Berkeley\.
 
-- Use the `tracer` decorator and the `Tracer` context manager to track Python function calls\.
+\- It adopts the `tracer` decorator and `Tracer` context manager to track function calls\.
 
 ### Using the `tracer` Decorator
 
-See `tests\core\test_tracer.py` for reference\.
+\- Refer to the file `tests\core\test_tracer.py` for details\.
 
 ```python
 from tracer import tracer
 
 def add(x,y):
     return x + y
-
 
 def chain(n):
     if n <= 1:
@@ -33,13 +32,14 @@ def fib(n):
         return 1
     else:
         return fib(n-2) + fib(n-1)
+
 if __name__ == "__main__":
     fun()
     print()
     fib(3)
 ```
 
-The execution output is shown below:
+**Execution Output:**
 
 ```plain text
 -> fun()
@@ -71,15 +71,13 @@ The execution output is shown below:
 
 ### Using the `Tracer` Context Manager
 
-See `tests\core\test_Tracer.py` for reference\.
+\- Refer to the file `tests\core\test_Tracer.py` for details\.
 
 ```python
 from tracer import Tracer
 
-
 def add(x,y):
     return x + y
-
 
 def chain(n):
     if n <= 1:
@@ -96,7 +94,7 @@ def fib(n):
         return 1
     else:
         return fib(n-2) + fib(n-1)
-    
+
 if __name__ == "__main__":
     with Tracer(trace_fn=[add,chain,fun,fib]):
         fun()
@@ -104,7 +102,7 @@ if __name__ == "__main__":
         fib(3)
 ```
 
-The execution output is shown below:
+**Execution Output:**
 
 ```plain text
 -> fun()
@@ -134,42 +132,41 @@ The execution output is shown below:
 |  <- fib returned 2
 ```
 
-Note that the `Tracer` context manager does not expose the `trace_entity: bool` interface\.
+**Note:** The `Tracer` context manager does not provide the `trace_entity: bool` interface\.
 
-### Tracer Core Features
-
----
-
-#### 1\. Logging Feature
-
-- Built on Python's native `logging` module\.
-
-- Enabled via the`logging_path` parameter of both the `tracer` decorator and the`Tracer` context manager\.
-
-- `logging_path` defaults to `None`\. If a valid file path is provided, it will be used as the output storage path for log files\.
-
-Refer to `tests/core/test_log_tracer.py` and `tests/core/test_log_Tracer.py` for detailed usage examples\.
+### Tracer Core Functionalities
 
 ---
 
-#### 2\. Time Tracing Feature
+#### 1\. Logging Function
 
-- Built on Python's `time` and `dataclass` modules\.
+- Implemented based on the built\-in `logging` module\.
 
-- Uniquely identifies each stack frame via frame markers\.
+- Enabled via the `logging_path` parameter of both the `tracer` decorator and `Tracer` context manager\.
 
-- Enabled via the `time_trace` parameter of both the `tracer` decorator and the `Tracer` context manager\.
+- `logging_path` defaults to `None`\. If a valid file path is passed, logs will be persisted to the specified path\.
+
+Refer to `tests/core/test_log_tracer.py` and `tests/core/test_log_Tracer.py` for usage examples\.
+
+---
+
+#### 2\. Time Tracing
+
+- Implemented based on the `time` and `dataclass` modules\.
+
+- Unique call records are identified via frame markers\.
+
+- Enabled via the `time_trace` parameter of `tracer` and `Tracer`\.
 
 - `time_trace` defaults to `False`\. Set it to `True` to enable time tracing\.
 
-**Example:**
+**Example Code:**
 
 ```python
 from tracer import tracer
 
 def add(x,y):
     return x + y
-
 
 def chain(n):
     if n <= 1:
@@ -191,13 +188,14 @@ def fib(n):
         return 1
     else:
         return fib(n-2) + fib(n-1)
+
 if __name__ == "__main__":
     fun()
     print()
     fib(3)
 ```
 
-**Output:**
+**Execution Output:**
 
 ```plain text
 -> fun()
@@ -222,7 +220,6 @@ chain           3       0.0003    0.0001    0.0000    0.0001
 fun             1       0.0002    0.0002    0.0002    0.0002    
 ============================================
 
-
 -> fib(n=3)
 |  -> fib(n=1)
 |  |  <- fib returned 1 | cost=0.000012s
@@ -240,4 +237,213 @@ fib             5       0.0002    0.0000    0.0000    0.0001
 ============================================
 ```
 
-Check `tests/core/test_time_Tracer.py` for the time tracing usage of the `Tracer` context manager\.
+Refer to `tests/core/test_time_Tracer.py` for time tracing usage with the `Tracer` context manager\.
+
+---
+
+#### 3\. Startup Interactive Inspection
+
+- Implemented based on the `code.interact` module\.
+
+- Enabled via the boolean parameter `interactive`\.
+
+- When enabled, an interactive shell will be launched for real\-time data inspection\.
+
+**Example Code:**
+
+```python
+from tracer import tracer
+
+def add(x,y):
+    return x + y
+
+def chain(n):
+    if n <= 1:
+        return add(1,1)
+    return add(n, chain(n-1))
+
+@tracer(trace_fn=[add, chain],
+        trace_entity=True,
+        logging_path="/home/ricaedo/Tracer/test.log",
+        interactive=True)
+def fun():
+    return chain(3)
+
+@tracer(trace_entity=True,
+        logging_path="/home/ricaedo/Tracer/test.log",
+        interactive=True)
+def fib(n):
+    if n == 0:
+        return 0
+    elif n == 1:
+        return 1
+    else:
+        return fib(n-2) + fib(n-1)
+
+if __name__ == "__main__":
+    fun()
+    print()
+    fib(3)
+```
+
+**Execution Output:**
+
+```plain text
+==== Tracer Interactive Shell ====
+
+===+fun()+===
+
+>>> exit()
+
+[Tracer] Interactive exit: SystemExit
+
+-> fun()
+|  -> chain(n=3)
+|  |  -> chain(n=2)
+|  |  |  -> chain(n=1)
+|  |  |  |  -> add(x=1, y=1)
+|  |  |  |  |  <- add returned 2
+|  |  |  |  <- chain returned 2
+|  |  |  -> add(x=2, y=2)
+|  |  |  |  <- add returned 4
+|  |  |  <- chain returned 4
+|  |  -> add(x=3, y=4)
+|  |  |  <- add returned 7
+|  |  <- chain returned 7
+|  <- fun returned 7
+
+==== Tracer Interactive Shell ====
+
+===+fib(3)+===
+
+>>> exit()
+
+[Tracer] Interactive exit: SystemExit
+
+-> fib(n=3)
+|  -> fib(n=1)
+|  |  <- fib returned 1
+|  -> fib(n=2)
+|  |  -> fib(n=0)
+|  |  |  <- fib returned 0
+|  |  -> fib(n=1)
+|  |  |  <- fib returned 1
+|  |  <- fib returned 1
+|  <- fib returned 2
+```
+
+This parameter is also supported by the`Tracer` context manager\. Refer to `tests/interact/test_Tracer_interact.py` for usage demonstrations\.
+
+---
+
+#### 4\. Key Event Terminal Interaction
+
+- Implemented based on the `code.interact` module\.
+
+- Enabled via the boolean parameter `interactive_on_event`\.
+
+- When enabled, an interactive shell will pop up at key execution nodes for data inspection\.
+
+**Example Code:**
+
+```python
+from tracer import tracer
+
+def add(x,y):
+    return x + y
+
+def chain(n):
+    if n <= 1:
+        return add(1,1)
+    return add(n, chain(n-1))
+
+@tracer(trace_fn=[add, chain],
+        trace_entity=True,
+        logging_path="/home/ricaedo/Tracer/test.log",
+        interactive_on_event=True)
+def fun():
+    return chain(3)
+
+@tracer(trace_entity=True,
+        logging_path="/home/ricaedo/Tracer/test.log",
+        interactive_on_event=True)
+def fib(n):
+    if n == 0:
+        return 0
+    elif n == 1:
+        return 1
+    else:
+        return fib(n-2) + fib(n-1)
+
+if __name__ == "__main__":
+    fib(2)
+```
+
+**Execution Output:**
+
+```plain text
+==== Tracer Interactive Shell ====
+
+===+fib(n=2)+===
+
+>>> exit()
+
+[Tracer] Interactive exit: SystemExit
+
+==== Tracer Interactive Shell ====
+
+===+fib(n=0)+===
+
+>>> exit()
+
+[Tracer] Interactive exit: SystemExit
+
+==== Tracer Interactive Shell ====
+
+===+fib returned 0====
+
+>>> exit()
+
+[Tracer] Interactive exit: SystemExit
+
+==== Tracer Interactive Shell ====
+
+===+fib(n=1)+===
+
+>>> exit()
+
+[Tracer] Interactive exit: SystemExit
+
+==== Tracer Interactive Shell ====
+
+===+fib returned 1====
+
+>>> exit()
+
+[Tracer] Interactive exit: SystemExit
+
+==== Tracer Interactive Shell ====
+
+===+fib returned 1====
+
+>>> exit()
+
+[Tracer] Interactive exit: SystemExit
+
+-> fib(n=2)
+|  -> fib(n=0)
+|  |  <- fib returned 0
+|  -> fib(n=1)
+|  |  <- fib returned 1
+|  <- fib returned 1
+```
+
+After enabling `interactive_on_event`, interactive shells will be triggered at the **start** and **return** moments of all traced functions\.
+
+This parameter is also compatible with the `Tracer` context manager\. Refer to `tests/interact/test_Tracer_interact_on_event.py` for relevant examples\.
+
+**Important Notes:**
+
+Enabling `interactive_on_event` is **not recommended** in most scenarios\. To preserve terminal stability, the tool suppresses `SystemExit`, `EOFError`, and `ValueError`, which may cause the program to be unclosable except by terminating the terminal process\. Additionally, each function triggers two interactive sessions \(on entry and return\), leading to severe efficiency degradation in large\-scale program execution\.
+
+**Only enable this parameter if you fully understand its working mechanism and usage scenarios\.**
