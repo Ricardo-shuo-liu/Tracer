@@ -4,10 +4,12 @@ from .TraceStats import TraceStats
 class TraceContext:
     def __init__(self,
                  logger,
-                 time_trace:bool=False):
+                 time_trace:bool=False,
+                 set_color:bool=False):
         self.prefix = ""
         self.logger = logger
         self.time_trace = time_trace
+        self.set_color = set_color
         self.output_content = []
         self.stats = TraceStats() if time_trace else None
     def indent(self):

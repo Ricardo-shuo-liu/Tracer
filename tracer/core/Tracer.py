@@ -13,7 +13,9 @@ def tracer(
         logging_path:str | None = None,
         time_trace:bool=False,
         interactive:bool= False,
-        interactive_on_event:bool=False) -> Callable:
+        interactive_on_event:bool=False,
+        interactive_filter:List[Callable]|None = None,
+        use_color:bool=False) -> Callable:
     """
     Decorator to capture function call stack, print hierarchical invocation tree,
     support execution time statistics and interactive debugging.
@@ -64,15 +66,27 @@ def tracer(
         if trace_fn is not None:
             target_names.update(f.__name__ for f in trace_fn)
         target_names = target_names if target_names else None
-        
+
+        filter = set()
+
+        if interactive_filter:
+            filter.update(f.__name__ for f in interactive_filter)
+        filter = filter if filter else None
         logger = Log(logging_path=logging_path).get_logger() if logging_path else None
        
         ctx = TraceContext(logger=logger,
-                           time_trace=time_trace)
+                           time_trace=time_trace,
+                           set_color=use_color)
         @functools.wraps(fn)
         def wrapped(*args, **kwds):
             def hook(frame, event, arg):
-                return frame_callback(ctx, target_names, interactive_on_event,frame, event, arg)
+                return frame_callback(ctx,
+                                      target_names,
+                                      interactive_on_event,
+                                      filter,
+                                      frame,
+                                      event,
+                                      arg)
             
             depth = getattr(wrapped, "_depth", 0)
 
@@ -105,7 +119,7 @@ def tracer(
                     sys.settrace(None)
                     ctx.outputcontrol()
                     if ctx.time_trace and ctx.stats:
-                        ctx.stats.print_report()
+                        ctx.stats.print_report(setcolor=ctx.set_color)
 
         return wrapped
     return include
@@ -116,7 +130,9 @@ class Tracer:
                  logging_path:str|None = None,
                  time_trace:bool=False,
                  interactive:bool= False,
-                 interactive_on_event:bool=False):
+                 interactive_on_event:bool=False,
+                 interactive_filter:List[Callable]|None = None,
+                 use_color:bool=False):
         """
         Context manager version of tracing utility, supports `with` syntax.
         Captures function call stack, prints hierarchical invocation tree,
@@ -161,12 +177,19 @@ class Tracer:
             target_names.update(f.__name__ for f in trace_fn)
 
         self.target_names = target_names if target_names else None
+
+        filter = set()
+        if interactive_filter:
+            filter.update(f.__name__ for f in interactive_filter)
+        self.filter = filter if filter else None
+
         logger = Log(logging_path=logging_path).get_logger() if logging_path else None
-        self.ctx = TraceContext(logger=logger,time_trace=time_trace)
+        self.ctx = TraceContext(logger=logger,time_trace=time_trace,set_color=use_color)
     def hook(self, frame, event, arg):
         return frame_callback(self.ctx,
                               self.target_names,
                               self.interactive_on_event,
+                              self.filter,
                               frame, event, arg)
     def __enter__(self):
         if self.interactive:
@@ -182,4 +205,4 @@ class Tracer:
         sys.settrace(None)
         self.ctx.outputcontrol()
         if self.ctx.time_trace and self.ctx.stats:
-            self.ctx.stats.print_report()
+            self.ctx.stats.print_report(setcolor=self.ctx.set_color)
