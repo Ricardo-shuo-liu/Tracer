@@ -610,3 +610,131 @@ Refer to `tests/interact/test_Tracer_interactive_filter.py` for usage with the `
 - **Note**: Enabling color rendering will cause garbled characters in log files due to string splicing\. It is recommended to disable logging when using color output\.
 
 See `tests/core/test_tracer_color.py` for color rendering effects with the `tracer` decorator, and `tests/core/test_Tracer_color.py` for the `Tracer` context manager\.
+
+### 7\. Exception Extraction
+
+- Built on Python's `traceback`, `dataclasses` and `json` modules
+
+- Enabled via the `exception_trace: bool` parameter of both `tracer` decorator and `Tracer` context manager
+
+- Captures every exception raised inside the traced scope and prints a structured report after execution
+
+- **A function that unwinds because of an exception prints `raised` instead of `returned None`**, so failures
+  are no longer indistinguishable from a legitimate `None` return value
+
+Example:
+
+```python
+from tracer import tracer
+
+def deep_untraced(n):          # NOT passed to trace_fn
+    if n < 0:
+        raise ValueError(f"negative depth: {n}")
+    return n * 2
+
+def risky(n):
+    return deep_untraced(n)
+
+def swallowed():
+    try:
+        raise KeyError("swallowed_key")
+    except KeyError:
+        return "recovered"
+
+@tracer(trace_fn=[risky, swallowed],
+        trace_entity=True,
+        exception_trace=True,
+        show_locals=True)
+def run():
+    swallowed()
+    return risky(-1)
+
+if __name__ == "__main__":
+    try:
+        run()
+    except ValueError as e:
+        print(f"[outside] caught: {type(e).__name__}: {e}")
+```
+
+Runtime output:
+
+```Plain Text
+-> run()
+|  -> swallowed()
+|  |  <- swallowed returned 'recovered'
+|  -> risky(n=-1)
+|  |  <- risky raised ValueError: negative depth: -1
+|  <- run raised ValueError: negative depth: -1
+
+===== Exception Trace Report =====
+total=2  unhandled=1  handled=1  by_type={'KeyError': 1, 'ValueError': 1}
+----------------------------------
+#1  KeyError: 'swallowed_key'
+    status      : handled by swallowed()
+    raised at   : swallowed() -> demo.py:13
+    propagated  : swallowed
+    stack (outermost -> raise point):
+      File "demo.py", line 13, in swallowed
+        raise KeyError("swallowed_key")
+----------------------------------
+#2  ValueError: negative depth: -1
+    status      : escaped (unhandled within traced scope)
+    raised at   : deep_untraced() -> demo.py:5
+    propagated  : risky -> run
+    stack (outermost -> raise point):
+      File "demo.py", line 20, in run
+        return risky(-1)
+      File "demo.py", line 8, in risky
+        return deep_untraced(n)
+      File "demo.py", line 5, in deep_untraced
+        raise ValueError(f"negative depth: {n}")
+    locals at observation point:
+      n = -1
+----------------------------------
+==================================
+```
+
+What gets extracted for every exception:
+
+| Field | Meaning |
+| --- | --- |
+| `exc_type` / `message` | Exception class name and `str()` of the instance |
+| `raised at` | Real raise point: function, file and line number |
+| `stack` | Full traceback chain **including frames that were never traced** |
+| `propagated` | Traced functions the exception travelled through, e\.g\. `dive x4 -> safe` |
+| `status` | `handled by xxx()` when swallowed inside the scope, `escaped` otherwise |
+| `locals` | Local variable snapshot at the observation point, only when `show_locals=True` |
+
+Related parameters:
+
+- `exception_trace: bool = False` — master switch for exception extraction
+
+- `show_locals: bool = False` — snapshot local variables where the exception is first observed
+
+- `exception_json_path: str | None = None` — dump all records to a JSON file after execution
+
+Programmatic access:
+
+```python
+with Tracer(trace_fn=[dive], exception_trace=True) as t:
+    ...
+t.errors.records        # list[ExcRecord]
+t.errors.to_list()      # list[dict], JSON-serialisable
+t.errors.unhandled      # exceptions that escaped the traced scope
+```
+
+With the decorator, the live context hangs off the wrapper:
+
+```python
+@tracer(trace_entity=True, exception_trace=True)
+def run(): ...
+
+run()
+run.tracer_ctx.errors.to_list()
+```
+
+**Important Note**: Exceptions are only observed inside frames that match `trace_fn` / `trace_entity`\.
+Tracer never swallows or suppresses anything — the exception keeps propagating exactly as before\.
+
+See `tests/core/test_exception_tracer.py` for the decorator flavour and
+`tests/core/test_Tracer_exception.py` for the context manager flavour\.

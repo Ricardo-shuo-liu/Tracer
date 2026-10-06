@@ -1,0 +1,95 @@
+{
+  "summary": {
+    "total": 2,
+    "unhandled": 1,
+    "handled": 1,
+    "by_type": {
+      "RuntimeError": 2
+    }
+  },
+  "exceptions": [
+    {
+      "seq": 1,
+      "exc_type": "RuntimeError",
+      "message": "bottom reached",
+      "status": "escaped (unhandled within traced scope)",
+      "raised_at": {
+        "func_name": "dive",
+        "filename": "/home/ricaedo/Tracer/tests/exceptions/test_Tracer_exception.py",
+        "lineno": 10,
+        "code_line": "raise RuntimeError(\"bottom reached\")"
+      },
+      "handled_by": null,
+      "escaped": true,
+      "propagation_path": [
+        "dive x4"
+      ],
+      "stack": [
+        {
+          "func_name": "dive",
+          "filename": "/home/ricaedo/Tracer/tests/exceptions/test_Tracer_exception.py",
+          "lineno": 11,
+          "code_line": "return dive(n - 1)"
+        },
+        {
+          "func_name": "dive",
+          "filename": "/home/ricaedo/Tracer/tests/exceptions/test_Tracer_exception.py",
+          "lineno": 11,
+          "code_line": "return dive(n - 1)"
+        },
+        {
+          "func_name": "dive",
+          "filename": "/home/ricaedo/Tracer/tests/exceptions/test_Tracer_exception.py",
+          "lineno": 11,
+          "code_line": "return dive(n - 1)"
+        },
+        {
+          "func_name": "dive",
+          "filename": "/home/ricaedo/Tracer/tests/exceptions/test_Tracer_exception.py",
+          "lineno": 10,
+          "code_line": "raise RuntimeError(\"bottom reached\")"
+        }
+      ],
+      "locals": null
+    },
+    {
+      "seq": 2,
+      "exc_type": "RuntimeError",
+      "message": "bottom reached",
+      "status": "handled by safe()",
+      "raised_at": {
+        "func_name": "dive",
+        "filename": "/home/ricaedo/Tracer/tests/exceptions/test_Tracer_exception.py",
+        "lineno": 10,
+        "code_line": "raise RuntimeError(\"bottom reached\")"
+      },
+      "handled_by": "safe",
+      "escaped": false,
+      "propagation_path": [
+        "dive x2",
+        "safe"
+      ],
+      "stack": [
+        {
+          "func_name": "safe",
+          "filename": "/home/ricaedo/Tracer/tests/exceptions/test_Tracer_exception.py",
+          "lineno": 16,
+          "code_line": "dive(1)"
+        },
+        {
+          "func_name": "dive",
+          "filename": "/home/ricaedo/Tracer/tests/exceptions/test_Tracer_exception.py",
+          "lineno": 11,
+          "code_line": "return dive(n - 1)"
+        },
+        {
+          "func_name": "dive",
+          "filename": "/home/ricaedo/Tracer/tests/exceptions/test_Tracer_exception.py",
+          "lineno": 10,
+          "code_line": "raise RuntimeError(\"bottom reached\")"
+        }
+      ],
+      "locals": null
+    }
+  ]
+}

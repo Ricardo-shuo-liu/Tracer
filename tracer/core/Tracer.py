@@ -15,10 +15,13 @@ def tracer(
         interactive:bool= False,
         interactive_on_event:bool=False,
         interactive_filter:List[Callable]|None = None,
-        use_color:bool=False) -> Callable:
+        use_color:bool=False,
+        exception_trace:bool=False,
+        show_locals:bool=False,
+        exception_json_path:str|None=None) -> Callable:
     """
     Decorator to capture function call stack, print hierarchical invocation tree,
-    support execution time statistics and interactive debugging.
+    support execution time statistics, exception extraction and interactive debugging.
 
     Args:
         trace_fn: List of additional target functions to trace. Set None if no extra functions need tracking.
@@ -30,6 +33,13 @@ def tracer(
         interactive_on_event: If True, pause and open interactive shell on every call / return event of traced functions.
             WARNING: Reserved for deep debugging only.
             Blocking inside trace callback may lead to unstable tracing. Not recommended for regular use.
+        exception_trace: If True, capture every exception raised inside the traced scope, including
+            full traceback stack (even frames that are not traced), propagation path across traced
+            functions, and whether it was swallowed or escaped. Prints a report after execution.
+        show_locals: Only effective when exception_trace=True. Snapshot local variables at the frame
+            where the exception was first observed.
+        exception_json_path: Only effective when exception_trace=True. Dump the exception records to
+            this JSON path after execution. Skipped if None.
 
     Examples:
         >>> # Basic usage: trace the decorated function and print tree log to console
@@ -76,7 +86,10 @@ def tracer(
        
         ctx = TraceContext(logger=logger,
                            time_trace=time_trace,
-                           set_color=use_color)
+                           set_color=use_color,
+                           exception_trace=exception_trace,
+                           show_locals=show_locals,
+                           exception_json_path=exception_json_path)
         @functools.wraps(fn)
         def wrapped(*args, **kwds):
             def hook(frame, event, arg):
@@ -117,10 +130,10 @@ def tracer(
                 setattr(wrapped, "_depth", new_depth)
                 if new_depth == 0:
                     sys.settrace(None)
-                    ctx.outputcontrol()
-                    if ctx.time_trace and ctx.stats:
-                        ctx.stats.print_report(setcolor=ctx.set_color)
+                    ctx.finish()
 
+        # expose the live context so callers can inspect records programmatically
+        wrapped.tracer_ctx = ctx
         return wrapped
     return include
 
@@ -132,11 +145,14 @@ class Tracer:
                  interactive:bool= False,
                  interactive_on_event:bool=False,
                  interactive_filter:List[Callable]|None = None,
-                 use_color:bool=False):
+                 use_color:bool=False,
+                 exception_trace:bool=False,
+                 show_locals:bool=False,
+                 exception_json_path:str|None=None):
         """
         Context manager version of tracing utility, supports `with` syntax.
         Captures function call stack, prints hierarchical invocation tree,
-        collects runtime statistics and provides interactive debugging.
+        collects runtime statistics, extracts exceptions and provides interactive debugging.
 
         Args:
             trace_fn: List of additional target functions to trace. Set None if no extra functions need tracking.
@@ -147,6 +163,13 @@ class Tracer:
             interactive_on_event: If True, pause and open interactive shell on every call / return event of traced functions.
                 WARNING: Reserved for deep debugging only.
                 Blocking inside trace callback may lead to unstable tracing. Not recommended for regular use.
+            exception_trace: If True, capture every exception raised inside the traced scope, including
+                full traceback stack (even frames that are not traced), propagation path across traced
+                functions, and whether it was swallowed or escaped. Prints a report on exit.
+            show_locals: Only effective when exception_trace=True. Snapshot local variables at the frame
+                where the exception was first observed.
+            exception_json_path: Only effective when exception_trace=True. Dump the exception records to
+                this JSON path on exit. Skipped if None.
 
         Examples:
             >>> def fib(n):
@@ -184,7 +207,19 @@ class Tracer:
         self.filter = filter if filter else None
 
         logger = Log(logging_path=logging_path).get_logger() if logging_path else None
-        self.ctx = TraceContext(logger=logger,time_trace=time_trace,set_color=use_color)
+        self.ctx = TraceContext(logger=logger,
+                                time_trace=time_trace,
+                                set_color=use_color,
+                                exception_trace=exception_trace,
+                                show_locals=show_locals,
+                                exception_json_path=exception_json_path)
+    @property
+    def errors(self):
+        """TraceErrors collector (None when exception_trace is disabled)."""
+        return self.ctx.errors
+    @property
+    def stats(self):
+        return self.ctx.stats
     def hook(self, frame, event, arg):
         return frame_callback(self.ctx,
                               self.target_names,
@@ -201,8 +236,8 @@ class Tracer:
                         event="call",
                         arg_text="++++++")
         sys.settrace(self.hook)
+        return self
     def __exit__(self, *_):
         sys.settrace(None)
-        self.ctx.outputcontrol()
-        if self.ctx.time_trace and self.ctx.stats:
-            self.ctx.stats.print_report(setcolor=self.ctx.set_color)
+        # returns None -> exceptions raised in the block keep propagating
+        self.ctx.finish()

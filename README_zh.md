@@ -573,3 +573,129 @@ if __name__ == "__main__":
 
 对于`tracer`装饰器 运行`tests/core/test_tracer_color.py`了解效果和使用方法
 对于`Tracer`上下文管理器 运行`tests/core/test_Tracer_color.py`了解效果和使用方法
+### 7\. 异常提取
+
+- 基于 Python 标准库 `traceback`、`dataclasses`、`json` 实现
+
+- 通过 `tracer` 装饰器与 `Tracer` 上下文管理器的 `exception_trace: bool` 参数开启
+
+- 捕获被追踪作用域内抛出的每一个异常，并在执行结束后输出结构化报告
+
+- **因异常退出的函数会打印 `raised` 而不是 `returned None`**，修复了"异常退出"与"正常返回 None"无法区分的问题
+
+示例：
+
+```python
+from tracer import tracer
+
+def deep_untraced(n):          # 未加入 trace_fn
+    if n < 0:
+        raise ValueError(f"negative depth: {n}")
+    return n * 2
+
+def risky(n):
+    return deep_untraced(n)
+
+def swallowed():
+    try:
+        raise KeyError("swallowed_key")
+    except KeyError:
+        return "recovered"
+
+@tracer(trace_fn=[risky, swallowed],
+        trace_entity=True,
+        exception_trace=True,
+        show_locals=True)
+def run():
+    swallowed()
+    return risky(-1)
+
+if __name__ == "__main__":
+    try:
+        run()
+    except ValueError as e:
+        print(f"[outside] caught: {type(e).__name__}: {e}")
+```
+
+运行输出：
+
+```Plain Text
+-> run()
+|  -> swallowed()
+|  |  <- swallowed returned 'recovered'
+|  -> risky(n=-1)
+|  |  <- risky raised ValueError: negative depth: -1
+|  <- run raised ValueError: negative depth: -1
+
+===== Exception Trace Report =====
+total=2  unhandled=1  handled=1  by_type={'KeyError': 1, 'ValueError': 1}
+----------------------------------
+#1  KeyError: 'swallowed_key'
+    status      : handled by swallowed()
+    raised at   : swallowed() -> demo.py:13
+    propagated  : swallowed
+    stack (outermost -> raise point):
+      File "demo.py", line 13, in swallowed
+        raise KeyError("swallowed_key")
+----------------------------------
+#2  ValueError: negative depth: -1
+    status      : escaped (unhandled within traced scope)
+    raised at   : deep_untraced() -> demo.py:5
+    propagated  : risky -> run
+    stack (outermost -> raise point):
+      File "demo.py", line 20, in run
+        return risky(-1)
+      File "demo.py", line 8, in risky
+        return deep_untraced(n)
+      File "demo.py", line 5, in deep_untraced
+        raise ValueError(f"negative depth: {n}")
+    locals at observation point:
+      n = -1
+----------------------------------
+==================================
+```
+
+每个异常被提取的字段：
+
+| 字段 | 含义 |
+| --- | --- |
+| `exc_type` / `message` | 异常类名与实例的 `str()` |
+| `raised at` | 真实抛出点：函数名、文件、行号 |
+| `stack` | 完整 traceback 链，**包含从未被追踪的中间帧** |
+| `propagated` | 异常流经的被追踪函数，例如 `dive x4 -> safe` |
+| `status` | 被作用域内捕获显示 `handled by xxx()`，否则显示 `escaped` |
+| `locals` | 观测点的局部变量快照，仅在 `show_locals=True` 时采集 |
+
+相关参数：
+
+- `exception_trace: bool = False` —— 异常提取总开关
+
+- `show_locals: bool = False` —— 采集异常首次被观测处的局部变量
+
+- `exception_json_path: str | None = None` —— 执行结束后将记录导出为 JSON 文件
+
+程序化访问：
+
+```python
+with Tracer(trace_fn=[dive], exception_trace=True) as t:
+    ...
+t.errors.records        # list[ExcRecord]
+t.errors.to_list()      # list[dict]，可直接序列化
+t.errors.unhandled      # 逃出追踪作用域的异常
+```
+
+装饰器版本通过包装函数暴露上下文对象：
+
+```python
+@tracer(trace_entity=True, exception_trace=True)
+def run(): ...
+
+run()
+run.tracer_ctx.errors.to_list()
+```
+
+**重要说明**：只有在 `trace_fn` / `trace_entity` 命中的帧内才会观测到异常\.
+Tracer 不会吞掉或抑制任何异常，异常依旧按原路径向上传播\.
+
+装饰器用法参见 `tests/core/test_exception_tracer.py`，上下文管理器用法参见
+`tests/core/test_Tracer_exception.py`\.

@@ -42,30 +42,57 @@ def frame_callback(
             SetInteract(namespace=namespace,func_name=func_name,event=event,arg_text=arg_text)
         ctx.indent()
 
+    elif event == "exception":
+        # arg = (exc_type, exc_value, traceback)
+        # Fires once per frame the exception travels through, including frames
+        # that are NOT part of target_set (they still show up in the tb chain).
+        if ctx.exception_trace and ctx.errors is not None:
+            ctx.pending_exc[frame] = ctx.errors.observe(func_name, arg, frame)
+
+    elif event == "line":
+        # Execution resumed in this frame => any pending exception was swallowed
+        # here (try/except inside the traced function).
+        if ctx.pending_exc:
+            rec = ctx.pending_exc.pop(frame, None)
+            if rec is not None and ctx.errors is not None:
+                ctx.errors.mark_handled(rec, func_name)
+
     elif event == "return":
+        pending_rec = ctx.pending_exc.pop(frame, None) if ctx.pending_exc else None
         cost = None
         if ctx.time_trace and ctx.stats:
             _,cost = ctx.stats.exit_func(frame)
-        if ctx.set_color:
-            if cost is not None:
-                func_str = f"{func_name}"
-                func_str = set_color(s=func_str,color="green")
-                return_str = f"{repr(arg)}"
-                return_str = set_color(s=return_str,color="blue")
-                cost_str = f"{cost:.6f}"
-                cost_str= set_color(s=cost_str,color="yellow")
-                output_line = f"{ctx.prefix}<- {func_str} returned {return_str} | cost={cost_str}s"
+
+        if pending_rec is not None:
+            # frame is unwinding because of an exception, not returning a value
+            if ctx.set_color:
+                func_str = set_color(s=f"{func_name}",color="green")
+                exc_str = set_color(s=f"{pending_rec.exc_type}: {pending_rec.message}",color="red")
+                output_line = f"{ctx.prefix}<- {func_str} raised {exc_str}"
             else:
-                func_str = f"{func_name}"
-                func_str = set_color(s=func_str,color="green")
-                return_str = f"{repr(arg)}"
-                return_str = set_color(s=return_str,color="blue")
-                output_line = f"{ctx.prefix}<- {func_str} returned {return_str}"
+                output_line = (f"{ctx.prefix}<- {func_name} raised "
+                               f"{pending_rec.exc_type}: {pending_rec.message}")
         else:
-            if cost is not None:
-                output_line = f"{ctx.prefix}<- {func_name} returned {repr(arg)} | cost={cost:.6f}s"
+            if ctx.set_color:
+                if cost is not None:
+                    func_str = f"{func_name}"
+                    func_str = set_color(s=func_str,color="green")
+                    return_str = f"{repr(arg)}"
+                    return_str = set_color(s=return_str,color="blue")
+                    cost_str = f"{cost:.6f}"
+                    cost_str= set_color(s=cost_str,color="yellow")
+                    output_line = f"{ctx.prefix}<- {func_str} returned {return_str} | cost={cost_str}s"
+                else:
+                    func_str = f"{func_name}"
+                    func_str = set_color(s=func_str,color="green")
+                    return_str = f"{repr(arg)}"
+                    return_str = set_color(s=return_str,color="blue")
+                    output_line = f"{ctx.prefix}<- {func_str} returned {return_str}"
             else:
-                 output_line = f"{ctx.prefix}<- {func_name} returned {repr(arg)}"
+                if cost is not None:
+                    output_line = f"{ctx.prefix}<- {func_name} returned {repr(arg)} | cost={cost:.6f}s"
+                else:
+                    output_line = f"{ctx.prefix}<- {func_name} returned {repr(arg)}"
 
         if interactive_on_event:
             namespace = {}
