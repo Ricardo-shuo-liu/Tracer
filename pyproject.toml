@@ -24,6 +24,5 @@ exclude = ["tests*", "docs*"]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.0",
     "build>=0.10.0"
 ]
