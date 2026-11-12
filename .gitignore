@@ -67,6 +67,7 @@ instance/
 
 # ========== 文档构建文件 ==========
 docs/_build/
+site/
 target/
 
 # ========== Jupyter/IPython ==========

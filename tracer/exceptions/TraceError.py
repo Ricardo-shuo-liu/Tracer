@@ -156,6 +156,11 @@ class TraceErrors:
         self._by_id: dict[int, ExcRecord] = {}
         self._keepalive: dict[int, Any] = {}
 
+    def reset(self) -> None:
+        """Drop records from a previous traced run."""
+        self.records.clear()
+        self.pending_clear()
+
     def observe(self, func_name:str, arg, frame) -> ExcRecord:
         """Called from the 'exception' trace event. arg = (type, value, tb)."""
         exc_type, exc_value, tb = arg
@@ -239,13 +244,14 @@ class TraceErrors:
             counts[r.exc_type] = counts.get(r.exc_type, 0) + 1
         return counts
 
-    def print_report(self, setcolor: bool = False) -> None:
+    def format_report(self, setcolor: bool = False) -> str:
         title = "===== Exception Trace Report ====="
-        print(f"\n{title}")
+        lines = ["", title]
         if not self.records:
-            print("No exception observed inside traced scope.")
-            print("=" * len(title) + "\n")
-            return
+            lines.append("No exception observed inside traced scope.")
+            lines.append("=" * len(title))
+            lines.append("")
+            return "\n".join(lines)
 
         summary = (
             f"total={len(self.records)}  "
@@ -253,9 +259,14 @@ class TraceErrors:
             f"handled={len(self.handled)}  "
             f"by_type={self._count_by_type()}"
         )
-        print(set_color(s=summary, color="blue") if setcolor else summary)
-        print("-" * len(title))
+        lines.append(set_color(s=summary, color="blue") if setcolor else summary)
+        lines.append("-" * len(title))
         for rec in self.records:
-            print(rec.format_text(setcolor=setcolor))
-            print("-" * len(title))
-        print("=" * len(title) + "\n")
+            lines.append(rec.format_text(setcolor=setcolor))
+            lines.append("-" * len(title))
+        lines.append("=" * len(title))
+        lines.append("")
+        return "\n".join(lines)
+
+    def print_report(self, setcolor: bool = False) -> None:
+        print(self.format_report(setcolor=setcolor), end="")

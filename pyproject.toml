@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pypi-tracer"
-version = "0.1.0"
+version = "0.1.1"
 requires-python = ">=3.10.9"
 authors = [{ name = "Ricardo-shuo-liu", email = "13838152117@139.com" }]
 description = "A lightweight intrusive Python function call tracer "
@@ -25,4 +25,8 @@ exclude = ["tests*", "docs*"]
 [project.optional-dependencies]
 dev = [
     "build>=0.10.0"
+]
+docs = [
+    "mkdocs-material>=9.5",
+    "mkdocs-static-i18n>=1.2",
 ]

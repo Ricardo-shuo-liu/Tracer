@@ -1,0 +1,84 @@
+site_name: Tracer
+site_description: A lightweight intrusive Python function call tracer
+site_url: https://ricardo-shuo-liu.github.io/Tracer/
+repo_url: https://github.com/Ricardo-shuo-liu/Tracer
+repo_name: Ricardo-shuo-liu/Tracer
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.highlight
+    - search.suggest
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+plugins:
+  - search
+  - i18n:
+      docs_structure: folder
+      fallback_to_default: true
+      reconfigure_material: true
+      reconfigure_search: true
+      languages:
+        - locale: en
+          default: true
+          name: English
+          build: true
+        - locale: zh
+          name: 简体中文
+          build: true
+          nav_translations:
+            Home: 首页
+            Getting Started: 快速开始
+            User Guide: 用户指南
+            Output Redirection: 输出重定向
+            Time Tracing: 耗时统计
+            Exception Tracing: 异常追踪
+            Color: 彩色输出
+            API Reference: API 参考
+            Architecture: 架构设计
+            Limitations: 已知限制
+            Migration Guide: 迁移指南
+            Changelog: 更新日志
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - User Guide:
+      - Output Redirection: guide/output.md
+      - Time Tracing: guide/time-tracing.md
+      - Exception Tracing: guide/exception-tracing.md
+      - Color: guide/color.md
+  - API Reference: api.md
+  - Architecture: architecture.md
+  - Limitations: limitations.md
+  - Migration Guide: migration.md
+  - Changelog: changelog.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true

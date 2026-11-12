@@ -1,13 +1,20 @@
 # Parser.py
 from typing import Callable
 from .TraceContext import TraceContext
-from tracer.interact import SetInteract
 from .Color import set_color
+
+
+def _safe_repr(value) -> str:
+    """repr() that never lets a broken __repr__ abort the traced call."""
+    try:
+        return repr(value)
+    except Exception as exc:
+        return f"<unrepresentable {type(value).__name__}: {exc}>"
+
+
 def frame_callback(
         ctx: TraceContext,
         target_set: set | None,
-        interactive_on_event:bool,
-        interactive_filter:set|None,
         frame,
         event,
         arg
@@ -22,7 +29,13 @@ def frame_callback(
         if ctx.time_trace and ctx.stats:
             ctx.stats.enter_func(frame, func_name)
         var_names = frame.f_code.co_varnames
-        args_str = [f"{name}={repr(frame.f_locals[name])}" for name in var_names]
+        # At a 'call' event only bound parameters exist in f_locals; local
+        # variables that have not been assigned yet must not be looked up.
+        args_str = [
+            f"{name}={_safe_repr(frame.f_locals[name])}"
+            for name in var_names
+            if name in frame.f_locals
+        ]
         arg_text = ", ".join(args_str)
         if ctx.set_color:
             func_str = f"{func_name}({arg_text})"
@@ -30,16 +43,6 @@ def frame_callback(
             output_line = f"{ctx.prefix}-> {func_str}"
         else:
             output_line = f"{ctx.prefix}-> {func_name}({arg_text})"
-        if interactive_on_event:
-            namespace = {}
-            namespace.update(globals())
-            namespace.update(frame.f_locals)
-            SetInteract(namespace=namespace,func_name=func_name,event=event,arg_text=arg_text)
-        elif interactive_filter is not None and func_name in interactive_filter:
-            namespace = {}
-            namespace.update(globals())
-            namespace.update(frame.f_locals)
-            SetInteract(namespace=namespace,func_name=func_name,event=event,arg_text=arg_text)
         ctx.indent()
 
     elif event == "exception":
@@ -77,7 +80,7 @@ def frame_callback(
                 if cost is not None:
                     func_str = f"{func_name}"
                     func_str = set_color(s=func_str,color="green")
-                    return_str = f"{repr(arg)}"
+                    return_str = f"{_safe_repr(arg)}"
                     return_str = set_color(s=return_str,color="blue")
                     cost_str = f"{cost:.6f}"
                     cost_str= set_color(s=cost_str,color="yellow")
@@ -85,36 +88,19 @@ def frame_callback(
                 else:
                     func_str = f"{func_name}"
                     func_str = set_color(s=func_str,color="green")
-                    return_str = f"{repr(arg)}"
+                    return_str = f"{_safe_repr(arg)}"
                     return_str = set_color(s=return_str,color="blue")
                     output_line = f"{ctx.prefix}<- {func_str} returned {return_str}"
             else:
                 if cost is not None:
-                    output_line = f"{ctx.prefix}<- {func_name} returned {repr(arg)} | cost={cost:.6f}s"
+                    output_line = f"{ctx.prefix}<- {func_name} returned {_safe_repr(arg)} | cost={cost:.6f}s"
                 else:
-                    output_line = f"{ctx.prefix}<- {func_name} returned {repr(arg)}"
+                    output_line = f"{ctx.prefix}<- {func_name} returned {_safe_repr(arg)}"
 
-        if interactive_on_event:
-            namespace = {}
-            namespace.update(globals())
-            namespace.update(frame.f_locals)
-            SetInteract(namespace=namespace,func_name=func_name,event=event,returned=repr(arg))
-        elif interactive_filter is not None and func_name in interactive_filter:
-            namespace = {}
-            namespace.update(globals())
-            namespace.update(frame.f_locals)
-            SetInteract(namespace=namespace,
-                        func_name=func_name,
-                        event=event,
-                        returned=repr(arg))
         ctx.dedent()
 
     if output_line is not None:
         ctx.add(output_line)
     def next_hook(f, e, a):
-        return frame_callback(ctx,
-                              target_set,
-                              interactive_on_event,
-                              interactive_filter,
-                              f, e, a)
+        return frame_callback(ctx, target_set, f, e, a)
     return next_hook

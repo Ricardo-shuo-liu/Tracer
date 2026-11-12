@@ -25,8 +25,9 @@ def _is_color_supported() -> bool:
     Returns:
         result(bool): Whether color output is supported
     """
-     # Non-interactive terminals do not support color output
-    if not sys.stdout.isatty():
+    # The tracer writes to stderr by default, so probe stderr rather than
+    # stdout (they can be redirected independently).
+    if sys.stderr is None or not sys.stderr.isatty():
         return False
     
     # Handle Windows systems
@@ -41,7 +42,7 @@ def _is_color_supported() -> bool:
             # Actively enable ANSI support for Windows terminal
             INVALID_HANDLE_VALUE = -1
             kernel32 = windll.kernel32
-            handle = kernel32.GetStdHandle(-11)  # STD_OUTPUT_HANDLE       
+            handle = kernel32.GetStdHandle(-12)  # STD_ERROR_HANDLE
             if handle == INVALID_HANDLE_VALUE:
                 return False
             success = kernel32.SetConsoleMode(handle, 7)

@@ -11,11 +11,11 @@ def chain(n):
 
 @tracer(trace_fn=[add, chain],
         trace_entity=True,
-        logging_path="/home/ricaedo/Tracer/test.log")
+        output_way="/home/ricaedo/Tracer/test.log")
 def fun():
     return chain(3)
 
-@tracer(trace_entity=True,logging_path="/home/ricaedo/Tracer/test.log")
+@tracer(trace_entity=True,output_way="/home/ricaedo/Tracer/test.log")
 def fib(n):
     if n == 0:
         return 0
